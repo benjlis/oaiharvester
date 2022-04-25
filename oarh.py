@@ -6,7 +6,7 @@ from datetime import datetime
 import csv
 
 CSV_FILENAME = 'oahr.csv'
-REQUEST_SLEEP = 60        # sleep between API requests (seconds)
+REQUEST_SLEEP = 30        # sleep between API requests (seconds)
 
 # define OAI details
 endpoint = 'https://search.archives.un.org/;oai?'
@@ -44,7 +44,6 @@ while True:
         about = 'N' if header.find('oai:about', ns) is None else 'Y'
         rows.append([identifier, datestamp, setspec, title, creator,
                      description, rights, id1, id2, about])
-    response = requests.get(endpoint, headers=req_header, params=payload)
     print(f'{datetime.now()}: {len(rows)} items processed, http status:\
  {response.status_code}')
     payload = {'verb': 'ListRecords',
