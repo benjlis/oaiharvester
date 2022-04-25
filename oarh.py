@@ -60,7 +60,8 @@ while True:
 
 print(f'Saving to {CSV_FILENAME}')
 fields = ['oai_id', 'oai_datestamp', 'oai_set', 'dc_title', 'dc_creator',
-          'dc_description', 'dc_rights', 'about']
+          'dc_description', 'dc_rights', 'dc_identifier1', 'dc_identifier2',
+          'about']
 with open(CSV_FILENAME, 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(fields)
