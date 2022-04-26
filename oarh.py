@@ -19,6 +19,12 @@ ns = {'oai': 'http://www.openarchives.org/OAI/2.0/',
       'dc': 'http://purl.org/dc/elements/1.1/',
       'oai_dc': 'http://www.openarchives.org/OAI/2.0/oai_dc/'}
 
+
+def get_el_text(el):
+    """Returns element text if exists"""
+    return '' if el is None else el.text
+
+
 rows = []
 while True:
     try:
@@ -27,20 +33,20 @@ while True:
             root = etree.fromstring(bytes(response.text, encoding='utf8'))
             for record in root.iterfind('.//oai:record', ns):
                 header = record.find('oai:header', ns)
-                identifier = header.find('oai:identifier', ns).text.split('_')[1]
-                datestamp = header.find('oai:datestamp', ns).text
-                setspec = header.find('oai:setSpec', ns).text.split('_')[1]
+                identifier = get_el_text(header.find('oai:identifier', ns)).\
+                    split('_')[1]
+                datestamp = get_el_text(header.find('oai:datestamp', ns))
+                setspec = get_el_text(header.find('oai:setSpec', ns)).\
+                    split('_')[1]
                 metadata = record.find('oai:metadata/oai_dc:dc', ns)
-                title = metadata.find('dc:title', ns).text
-                creator = metadata.find('dc:creator', ns).text
-                description_el = metadata.find('dc:description', ns)
-                description = None
-                if description_el is not None:
-                    description = description_el.text
-                rights = metadata.find('dc:rights', ns).text
+                title = get_el_text(metadata.find('dc:title', ns))
+                creator = get_el_text(metadata.find('dc:creator', ns))
+                description = get_el_text(metadata.find('dc:description', ns))
+                rights = get_el_text(metadata.find('dc:rights', ns))
                 identifiers = metadata.findall('dc:identifier', ns)
-                id1 = identifiers[0].text
-                id2 = identifiers[1].text
+                if len(identifiers) >= 2:
+                    id1 = get_el_text(identifiers[0])
+                    id2 = get_el_text(identifiers[1])
                 about = 'N' if record.find('oai:about', ns) is None else 'Y'
                 rows.append([identifier, datestamp, setspec, title, creator,
                             description, rights, id1, id2, about])
