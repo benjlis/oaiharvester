@@ -13,11 +13,16 @@ REQUEST_SLEEP = 60        # sleep between API requests (seconds)
 endpoint = 'https://search.archives.un.org/;oai?'
 payload = {'verb': 'ListRecords',
            'metadataPrefix': 'oai_dc',
-           'set': 'oai:search.archives.un.org:_465279'}
+           'set': 'oai:search.archives.un.org:_465279'
+           }
+# payload = {'verb': 'GetRecord',
+#            'metadataPrefix': 'oai_dc',
+#            'identifier': 'oai:search.archives.un.org:_468300'}
 req_header = {'X-OAI-API-Key': os.getenv('API_KEY')}
 ns = {'oai': 'http://www.openarchives.org/OAI/2.0/',
       'dc': 'http://purl.org/dc/elements/1.1/',
-      'oai_dc': 'http://www.openarchives.org/OAI/2.0/oai_dc/'}
+      'oai_dc': 'http://www.openarchives.org/OAI/2.0/oai_dc/',
+      'atom': 'http://www.w3.org/2005/Atom'}
 
 
 def get_el_text(el):
@@ -47,14 +52,29 @@ while True:
                 if len(identifiers) >= 2:
                     id1 = get_el_text(identifiers[0])
                     id2 = get_el_text(identifiers[1])
-                about = 'N' if record.find('oai:about', ns) is None else 'Y'
+                # check for PDF attachment
+                about = record.find('oai:about', ns)
+                if about is None:
+                    doc = 'N'
+                    pdf_url = jpg_url = ''
+                else:
+                    doc = 'Y'
+                    urls = about.findall('atom:feed/atom:entry/atom:link', ns)
+                    if len(urls) >= 2:
+                        pdf_url = urls[0].attrib['href']
+                        jpg_url = urls[1].attrib['href']
                 rows.append([identifier, datestamp, setspec, title, creator,
-                            description, rights, id1, id2, about])
+                             description, rights, id1, id2, doc, pdf_url,
+                             jpg_url])
             print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: \
 {len(rows)} items processed')
-            payload = {'verb': 'ListRecords',
-                       'resumptionToken': root.find('.//oai:resumptionToken',
-                                                    ns).text}
+            resumption_token = get_el_text(root.find('.//oai:resumptionToken',
+                                                     ns))
+            if resumption_token:
+                payload = {'verb': 'ListRecords',
+                           'resumptionToken': resumption_token}
+            else:      # No resumption_token means no more no data
+                break
         else:
             print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: \
 {response.status_code} http status')
@@ -67,7 +87,7 @@ while True:
 print(f'Saving to {CSV_FILENAME}')
 fields = ['oai_id', 'oai_datestamp', 'oai_set', 'dc_title', 'dc_creator',
           'dc_description', 'dc_rights', 'dc_identifier1', 'dc_identifier2',
-          'about']
+          'doc', 'pdf_url', 'jpg_url']
 with open(CSV_FILENAME, 'w') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerow(fields)
